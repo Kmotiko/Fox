@@ -5,10 +5,9 @@ PROJECT(FOX CXX)
 enable_testing()
 
 #
-find_package(Boost)
-if(Boost_FOUND)
-  include_directories(${Boost_INCLUDE_DIRS})
-endif()
+find_package(BISON 3)
+find_package(FLEX 2.6)
+
 
 if(NOT CMAKE_CXX_COMPILER)
   set(CMAKE_CXX_COMPILER clang++)
@@ -47,9 +46,10 @@ set (LLVM_CXX_FLAGS
   -D_DEBUG -D_GNU_SOURCE -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS -O3 -fvisibility-inlines-hidden -fno-common -Wcast-qual
 )
 
-include_directories("${PROJECT_SOURCE_DIR}")
-include_directories("${LLVM_INCLUDE_DIR}")
-link_directories("${LLVM_LIB_DIR}")
+include_directories(${PROJECT_SOURCE_DIR})
+include_directories(${PROJECT_BINARY_DIR})
+include_directories(${LLVM_INCLUDE_DIR})
+link_directories(${LLVM_LIB_DIR})
 
 add_definitions(-std=c++1y -Wall)
 add_definitions(${LLVM_CXX_FLAGS})
