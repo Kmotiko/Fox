@@ -1,18 +1,32 @@
 set(CMAKE_VERBOSE_MAKEFILE 1)
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 2.8.11)
 PROJECT(FOX CXX)
 
 enable_testing()
 
-#
+
+#GTEST Settings
+set(GTEST_DIR ${CMAKE_BINARY_DIR}/ext-proj/gtest)
+configure_file(gtest.cmake ${GTEST_DIR}CMakeLists.txt)
+execute_process(COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" .
+  RESULT_VARIABLE result
+  WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/ext-proj/gtest)
+execute_process(COMMAND ${CMAKE_COMMAND} --build .
+  RESULT_VARIABLE result
+  WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/ext-proj/gtest)
+add_subdirectory(${GTEST_DIR}/src ${GTEST_DIR}/build)
+
+
+# BISON and FLEX
 find_package(BISON 3)
 find_package(FLEX 2.6)
-
 
 if(NOT CMAKE_CXX_COMPILER)
   set(CMAKE_CXX_COMPILER clang++)
 endif()
 
+
+# LLVM FLAGS
 if(NOT LLVM_CONFIG)
   set(LLVM_CONFIG llvm-config)
 endif()
@@ -26,7 +40,7 @@ execute_process(COMMAND ${LLVM_CONFIG}  --includedir
   OUTPUT_STRIP_TRAILING_WHITESPACE
   )
 execute_process(COMMAND ${LLVM_CONFIG}  --libs
-  OUTPUT_VARIABLE LLVM_LIB_FLAG
+  OUTPUT_VARIABLE LLVM_LIB_FLAGS
   OUTPUT_STRIP_TRAILING_WHITESPACE
   )
 
@@ -36,7 +50,7 @@ list(APPEND LLVM_LIB_NAMES
      z
      m
      dl)
-string(REGEX MATCHALL "-l([^ ]+)" LLVM_LIBS ${LLVM_LIB_FLAG})
+string(REGEX MATCHALL "-l([^ ]+)" LLVM_LIBS ${LLVM_LIB_FLAGS})
 foreach(var ${LLVM_LIBS})
   string(REGEX REPLACE "-l([^ ]+)" "\\1" LIB_NAME ${var})
   list(APPEND LLVM_LIB_NAMES ${LIB_NAME})

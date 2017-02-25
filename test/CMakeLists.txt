@@ -1,4 +1,6 @@
 add_subdirectory(ast)
 add_subdirectory(codegen)
+add_subdirectory(driver)
+add_subdirectory(lexer)
 add_subdirectory(parser)
 add_subdirectory(semantics)
