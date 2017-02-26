@@ -51,15 +51,16 @@ static fox::parser::fox_parser::symbol_type yylex(fox::driver::fox_driver &drive
 %define api.token.prefix {TOK_}
 %token END 0 "end of file";
 %token <std::string> IDENTIFIER FLOATING INTEGER STRINGLITERAL
+%token NEW              "new"
 %token NIL              "nil"
 %token TRUE             "true"
 %token FALSE            "false"
 %token LF               "\n"
 %token CRLF             "\r\n"
-%token MUL              "*"
-%token DIV              "/"
-%token PLUS             "+"
-%token MINUS            "-"
+%token MUL_OP           "*"
+%token DIV_OP           "/"
+%token ADD_OP           "+"
+%token SUB_OP           "-"
 %token INC              "++"
 %token DEC              "--"
 %token ASSIGN           "="
@@ -77,6 +78,8 @@ static fox::parser::fox_parser::symbol_type yylex(fox::driver::fox_driver &drive
 %token RPAREN           ")"
 %token LBREATH          "{"
 %token RBREATH          "}"
+%token LSQUARE_BRACKET  "["
+%token RSQUARE_BRACKET  "]"
 %token OR               "||"
 %token AND              "&&"
 %token NOT              "!!"
@@ -92,15 +95,21 @@ static fox::parser::fox_parser::symbol_type yylex(fox::driver::fox_driver &drive
 %token DCOLLON          "::"
 %token SEMICOLLON       ";"
 %token INT              "int"
-%token SHORT            "short"
-%token LONG             "long"
+%token INT8             "int8"
+%token INT16            "int16"
+%token INT32            "int32"
+%token INT64            "int64"
+%token UINT             "uint"
+%token UINT8            "uint8"
+%token UINT16           "uint16"
+%token UINT32           "uint32"
+%token UINT64           "uint64"
 %token FLOAT            "float"
 %token DOUBLE           "double"
 %token BOOL             "bool"
-%token STR              "str"
+%token BYTE             "byte"
 %token DEF              "def"
 %token CLASS            "class"
-%token CONST            "const"
 %token IF               "if"
 %token ELSE             "else"
 %token SWITCH           "switch"
@@ -123,7 +132,7 @@ new_line
 | CRLF {}
 ;
 
-separater
+separator
 : SEMICOLLON {}
 | new_line {}
 ;
@@ -154,7 +163,7 @@ class_definition
 
 in_class_declarations
 : in_class_declaration {}
-| in_class_declaration in_class_declarations {}
+| in_class_declarations in_class_declaration {}
 ;
 
 
@@ -179,15 +188,13 @@ prototype
 
 parameter_list
 : variable_declaration {}
-| variable_declaration COMMA parameter_list {}
+| parameter_list COMMA variable_declaration {}
 ;
 
 
 variable_declaration
-: IDENTIFIER type_specifier separater {}
-| IDENTIFIER type_specifier ASSIGN initializer separater {}
-| IDENTIFIER type_qualifier type_specifier separater {}
-| IDENTIFIER type_qualifier type_specifier ASSIGN initializer separater {}
+: IDENTIFIER type_declarator separator {}
+| IDENTIFIER type_declarator ASSIGN initializer separator {}
 ;
 
 
@@ -202,32 +209,39 @@ module_name
 ;
 
 
-type_qualifier
-: CONST {}
+type_declarator
+: type_specifier
+| MUL_OP type_specifier
 ;
 
 
 type_specifier
 : INT {}
-| SHORT {}
-| LONG {}
+| INT8 {}
+| INT16 {}
+| INT32 {}
+| INT64 {}
+| UINT {}
+| UINT8 {}
+| UINT16 {}
+| UINT32 {}
+| UINT64 {}
 | FLOAT {}
 | DOUBLE {}
 | BOOL {}
-| STR {}
+| BYTE {}
 | IDENTIFIER {}
 ;
 
 
 initializer
 : assignment_expression {}
-| assignment_expression EQUAL initializer {}
+| assignment_expression ASSIGN initializer {}
 ;
 
 
 compound_statement
 : LBREATH RBREATH {}
-| LBREATH new_line RBREATH {}
 | LBREATH statement_list RBREATH {}
 ;
 
@@ -256,14 +270,14 @@ labeld_statement
 
 
 expression_statement
-: separater {}
-| expression separater {}
+: separator
+| expression separator {}
 ;
 
 
 expression
 : assignment_expression {}
-| assignment_expression expression {}
+| expression assignment_expression {}
 ;
 
 
@@ -279,8 +293,8 @@ switch_statement
 
 
 case_statement
-: CASE expression COLLON new_line statement {}
-| DEFAULT COLLON new_line statement {}
+: CASE expression COLLON new_line statement_list {}
+| DEFAULT COLLON new_line statement_list {}
 ;
 
 
@@ -367,16 +381,17 @@ shift_expression
 
 additive_expression
 : multiplicative_expression {}
-| additive_expression PLUS multiplicative_expression {}
-| additive_expression MINUS additive_expression {}
+| additive_expression ADD_OP multiplicative_expression {}
+| additive_expression SUB_OP multiplicative_expression {}
 ;
 
 
 multiplicative_expression
 : cast_expression {}
-| multiplicative_expression MUL cast_expression {}
-| multiplicative_expression DIV cast_expression {}
+| multiplicative_expression MUL_OP cast_expression {}
+| multiplicative_expression DIV_OP cast_expression {}
 ;
+
 
 cast_expression
 : unary_expression {}
@@ -386,20 +401,29 @@ cast_expression
 
 unary_expression
 : postfix_expression {}
-| unary_expression INC postfix_expression {}
-| unary_expression DEC postfix_expression {}
+| INC unary_expression {}
+| DEC unary_expression {}
+| MUL_OP unary_expression {}
+| ADD_OP unary_expression {}
+| SUB_OP unary_expression {}
+| NOT unary_expression {}
+| BITNOT unary_expression {}
+| BITXOR unary_expression {}
 ;
 
 
 postfix_expression
 : primary_expression {}
+| new_expression {}
 | call_expression {}
+| postfix_expression LSQUARE_BRACKET expression RSQUARE_BRACKET {}
 | postfix_expression INC {}
 | postfix_expression DEC {}
 ;
 
 call_expression
-: IDENTIFIER LPAREN argument_list RPAREN {}
+: IDENTIFIER LPAREN RPAREN {}
+| IDENTIFIER LPAREN argument_list RPAREN {}
 | IDENTIFIER DOT call_expression {}
 ;
 
@@ -407,6 +431,12 @@ call_expression
 argument_list
 : assignment_expression {}
 | argument_list COMMA assignment_expression {}
+;
+
+
+new_expression
+: NEW type_specifier LPAREN RPAREN {}
+| NEW type_specifier LPAREN argument_list RPAREN {}
 ;
 
 
